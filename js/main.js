@@ -8,10 +8,11 @@ import { DEFAULTS } from './model/constants.js';
 
 const aquariumCanvas = document.getElementById('aquarium');
 const controlPanelNode = document.getElementById('control-panel');
+const simulationControlsNode = document.getElementById('simulation-controls');
 const statusNode = document.getElementById('status');
 
 const loader = new AssetLoader();
-const controlPanel = new ControlPanel(controlPanelNode);
+const controlPanel = new ControlPanel(controlPanelNode, simulationControlsNode);
 
 const worldBounds = {
     x: 0,

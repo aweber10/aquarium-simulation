@@ -12,10 +12,13 @@
         <p id="status" class="status-message">Lade Ressourcen ...</p>
     </header>
     <main class="app-main">
-        <section class="aquarium-container">
-            <canvas id="aquarium" width="800" height="400"></canvas>
+        <section class="app-main__column">
+            <div class="surface-panel aquarium-container">
+                <canvas id="aquarium" width="800" height="400"></canvas>
+            </div>
+            <div id="simulation-controls" class="surface-panel simulation-controls"></div>
         </section>
-        <aside class="control-panel-container">
+        <aside class="surface-panel control-panel-container">
             <div id="control-panel" class="control-panel"></div>
         </aside>
     </main>
