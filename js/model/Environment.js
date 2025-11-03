@@ -3,14 +3,28 @@ import { CarbonDioxide } from './CarbonDioxide.js';
 import { Toxins } from './Toxins.js';
 import { NeonFish } from './NeonFish.js';
 import { MODEL_INTERVAL_SECONDS } from './constants.js';
+import { Plants } from './Plants.js';
+import { Algae } from './Algae.js';
+import { Nutrients } from './Nutrients.js';
+import { Light } from './Light.js';
+import { DeadPlants } from './DeadPlants.js';
+import { DeadFish } from './DeadFish.js';
 
 export class Environment {
     constructor({ initialFish = 0 } = {}) {
         this.oxygen = new Oxygen(this);
         this.carbonDioxide = new CarbonDioxide(this);
         this.toxins = new Toxins(this);
+        this.light = new Light(this);
+        this.nutrients = new Nutrients(this);
+        this.plants = new Plants(this);
+        this.algae = new Algae(this);
+        this.deadPlants = new DeadPlants(this);
+        this.deadFish = new DeadFish(this);
         this.fish = [];
         this.accumulator = 0;
+        this.feedLevel = 'medium';
+        this.lightLevel = 'medium';
 
         if (initialFish > 0) {
             this.addFish(initialFish);
@@ -39,6 +53,20 @@ export class Environment {
         this.toxins.value *= 0.35;
         this.oxygen.value = Math.min(this.oxygen.value + 15, 100);
         this.carbonDioxide.value = Math.max(this.carbonDioxide.value - 10, 0);
+        this.deadPlants.value *= 0.5;
+        this.deadFish.value *= 0.5;
+        return this.getSnapshot();
+    }
+
+    setNutrientLevel(value) {
+        this.nutrients.setLevel(value);
+        this.feedLevel = value <= 90 ? 'low' : value >= 110 ? 'high' : 'medium';
+        return this.getSnapshot();
+    }
+
+    setLightLevel(value) {
+        this.light.setLevel(value);
+        this.lightLevel = value <= 11 ? 'low' : value >= 13 ? 'high' : 'medium';
         return this.getSnapshot();
     }
 
@@ -68,7 +96,13 @@ export class Environment {
             carbonDioxide: this.carbonDioxide.value,
             toxins: this.toxins.value,
             fishCount: this.fish.length,
-            averageHealth
+            averageHealth,
+            plants: this.plants.value,
+            algae: this.algae.value,
+            light: this.light.value,
+            nutrients: this.nutrients.value,
+            feedLevel: this.feedLevel,
+            lightLevel: this.lightLevel
         };
     }
 
@@ -79,14 +113,20 @@ export class Environment {
             const { dead } = fish.update();
             if (dead) {
                 deaths += 1;
+                this.deadFish.value += 10;
                 return false;
             }
             return true;
         });
 
+        this.light.update();
+        this.plants.update();
+        this.algae.update();
         this.oxygen.update();
         this.carbonDioxide.clamp();
         this.toxins.update();
+        this.deadPlants.update();
+        this.deadFish.update();
         this.carbonDioxide.clamp();
 
         return deaths;

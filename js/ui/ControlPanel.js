@@ -43,6 +43,20 @@ export class ControlPanel {
                         <span class="control-panel__value" data-value="health">0%</span>
                     </div>
                 </div>
+                <div class="control-panel__stat">
+                    <div class="control-panel__row">
+                        <span class="control-panel__label">Pflanzen</span>
+                        <span class="control-panel__value" data-value="plants">0</span>
+                    </div>
+                    <meter min="0" max="5000" value="0" data-meter="plants"></meter>
+                </div>
+                <div class="control-panel__stat">
+                    <div class="control-panel__row">
+                        <span class="control-panel__label">Algen</span>
+                        <span class="control-panel__value" data-value="algae">0</span>
+                    </div>
+                    <meter min="0" max="200" value="0" data-meter="algae"></meter>
+                </div>
             </div>
             <div class="control-panel__actions">
                 <button type="button" class="control-panel__button control-panel__button--primary" data-action="add">
@@ -54,6 +68,26 @@ export class ControlPanel {
                 <button type="button" class="control-panel__button control-panel__button--accent" data-action="water">
                     Wasserwechsel
                 </button>
+            </div>
+            <div class="control-panel__controls">
+                <div class="control-panel__group">
+                    <span class="control-panel__group-label">Futter</span>
+                    <div class="control-panel__segmented" data-group="feed">
+                        <button type="button" class="control-panel__segment" data-feed="low">Wenig</button>
+                        <button type="button" class="control-panel__segment control-panel__segment--active" data-feed="medium">Normal</button>
+                        <button type="button" class="control-panel__segment" data-feed="high">Viel</button>
+                    </div>
+                    <span class="control-panel__group-value" data-value="nutrients">0</span>
+                </div>
+                <div class="control-panel__group">
+                    <span class="control-panel__group-label">Licht</span>
+                    <div class="control-panel__segmented" data-group="light">
+                        <button type="button" class="control-panel__segment" data-light="low">Sanft</button>
+                        <button type="button" class="control-panel__segment control-panel__segment--active" data-light="medium">Standard</button>
+                        <button type="button" class="control-panel__segment" data-light="high">Hell</button>
+                    </div>
+                    <span class="control-panel__group-value" data-value="light">0</span>
+                </div>
             </div>
             <div class="control-panel__footer">Modell tickt jede Sekunde. Werte experimentell.</div>
         `;
@@ -67,9 +101,17 @@ export class ControlPanel {
             toxinsValue: this.hostElement.querySelector('[data-value="toxins"]'),
             fishCount: this.hostElement.querySelector('[data-value="fishCount"]'),
             healthValue: this.hostElement.querySelector('[data-value="health"]'),
+            plantsValue: this.hostElement.querySelector('[data-value="plants"]'),
+            plantsMeter: this.hostElement.querySelector('[data-meter="plants"]'),
+            algaeValue: this.hostElement.querySelector('[data-value="algae"]'),
+            algaeMeter: this.hostElement.querySelector('[data-meter="algae"]'),
+            nutrientsValue: this.hostElement.querySelector('[data-value="nutrients"]'),
+            lightValue: this.hostElement.querySelector('[data-value="light"]'),
             addFishButton: this.hostElement.querySelector('[data-action="add"]'),
             removeFishButton: this.hostElement.querySelector('[data-action="remove"]'),
-            waterChangeButton: this.hostElement.querySelector('[data-action="water"]')
+            waterChangeButton: this.hostElement.querySelector('[data-action="water"]'),
+            feedButtons: Array.from(this.hostElement.querySelectorAll('[data-feed]')),
+            lightButtons: Array.from(this.hostElement.querySelectorAll('[data-light]'))
         };
 
         this.handlers = handlers;
@@ -93,9 +135,34 @@ export class ControlPanel {
         this.elements.fishCount.textContent = snapshot.fishCount.toString();
         this.elements.healthValue.textContent = `${snapshot.averageHealth.toFixed(0)}%`;
 
+        if (this.elements.plantsValue) {
+            this.elements.plantsValue.textContent = snapshot.plants.toFixed(0);
+        }
+        if (this.elements.plantsMeter) {
+            this.elements.plantsMeter.value = snapshot.plants;
+        }
+
+        if (this.elements.algaeValue) {
+            this.elements.algaeValue.textContent = snapshot.algae.toFixed(1);
+        }
+        if (this.elements.algaeMeter) {
+            this.elements.algaeMeter.value = snapshot.algae;
+        }
+
+        if (this.elements.nutrientsValue) {
+            this.elements.nutrientsValue.textContent = `${snapshot.nutrients.toFixed(0)} N`;
+        }
+
+        if (this.elements.lightValue) {
+            this.elements.lightValue.textContent = `${snapshot.light.toFixed(1)} lx`;
+        }
+
         if (this.elements.removeFishButton) {
             this.elements.removeFishButton.disabled = snapshot.fishCount === 0;
         }
+
+        this.#setActiveSegment(this.elements.feedButtons, snapshot.feedLevel, 'feed');
+        this.#setActiveSegment(this.elements.lightButtons, snapshot.lightLevel, 'light');
     }
 
     #bindEvents() {
@@ -108,5 +175,26 @@ export class ControlPanel {
         if (this.elements.waterChangeButton && typeof this.handlers.onWaterChange === 'function') {
             this.elements.waterChangeButton.addEventListener('click', () => this.handlers.onWaterChange());
         }
+        if (this.elements.feedButtons && typeof this.handlers.onFeedChange === 'function') {
+            this.elements.feedButtons.forEach((button) => {
+                button.addEventListener('click', () => this.handlers.onFeedChange(button.dataset.feed));
+            });
+        }
+        if (this.elements.lightButtons && typeof this.handlers.onLightChange === 'function') {
+            this.elements.lightButtons.forEach((button) => {
+                button.addEventListener('click', () => this.handlers.onLightChange(button.dataset.light));
+            });
+        }
+    }
+
+    #setActiveSegment(buttons, activeKey, key) {
+        if (!buttons || !buttons.length || !activeKey) {
+            return;
+        }
+
+        buttons.forEach((button) => {
+            const value = button.dataset[key];
+            button.classList.toggle('control-panel__segment--active', value === activeKey);
+        });
     }
 }

@@ -11,6 +11,7 @@ served directly by any static web server during active development.
 - Lightweight sprite engine animates a small school of neon fish with bounce physics.
 - Minimal ecosystem model updates oxygen, CO2, toxins and fish health once per second.
 - Erste Interaktionen: Fische hinzufuegen/entfernen sowie Wasserwechsel beeinflussen direkt das Modell.
+- Pflanzen-, Algen- und Naehrstofflogik migriert; moderne Buttons steuern Futter- und Lichtlevel.
 
 ## Development Setup
 
@@ -20,6 +21,6 @@ served directly by any static web server during active development.
 
 ## Next Steps
 
-- Expand the ecosystem model with plants, algae and nutrient cycles (`js/model/`).
-- Introduce weitere interaktive Control-Widgets (Futter, Licht, Wasserqualitaet) und verbinde sie mit dem Modell.
+- Port the remaining ecosystem pieces (z.B. Giftabbau-Tuning, tote Organismen) und kalibriere die Konstanten.
+- Ergänze weitere UI-Interaktionen wie Futter- oder Licht-Automatiken und Notfallaktionen.
 - Bring over sprite AI (schooling, collision, nutrition effects) and hook it into the canvas loop.

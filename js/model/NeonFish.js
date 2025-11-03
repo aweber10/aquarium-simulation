@@ -8,12 +8,18 @@ export class NeonFish extends Component {
     }
 
     update() {
-        const { oxygen, carbonDioxide, toxins } = this.environment;
+        const { oxygen, carbonDioxide, toxins, nutrients } = this.environment;
         const oxygenConsumption = oxygen.value * DEFAULTS.fish.oxygenConsumptionRate;
 
         oxygen.value = Math.max(LIMITS.minValue, oxygen.value - oxygenConsumption);
         carbonDioxide.value += oxygenConsumption;
         toxins.value += DEFAULTS.fish.wasteRate;
+
+        if (nutrients.value < 60) {
+            this.value -= 0.5;
+        } else if (nutrients.value > 110) {
+            this.value += 0.5;
+        }
 
         if (toxins.value > DEFAULTS.toxinThresholds.danger) {
             this.value -= 1;

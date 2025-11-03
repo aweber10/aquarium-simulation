@@ -4,6 +4,7 @@ import { ControlPanel } from './ui/ControlPanel.js';
 import { Background } from './sprites/Background.js';
 import { Fish } from './sprites/Fish.js';
 import { Environment } from './model/Environment.js';
+import { DEFAULTS } from './model/constants.js';
 
 const aquariumCanvas = document.getElementById('aquarium');
 const controlPanelNode = document.getElementById('control-panel');
@@ -27,6 +28,17 @@ let fishFrames = {
     left: [],
     right: []
 };
+const FEED_LEVELS = {
+    low: DEFAULTS.nutrients.feedLow,
+    medium: DEFAULTS.nutrients.feedMid,
+    high: DEFAULTS.nutrients.feedHigh
+};
+
+const LIGHT_LEVELS = {
+    low: DEFAULTS.light.low,
+    medium: DEFAULTS.light.medium,
+    high: DEFAULTS.light.high
+};
 
 async function bootstrap() {
     try {
@@ -40,7 +52,9 @@ async function bootstrap() {
         controlPanel.render({
             onAddFish: handleAddFish,
             onRemoveFish: handleRemoveFish,
-            onWaterChange: handleWaterChange
+            onWaterChange: handleWaterChange,
+            onFeedChange: handleFeedChange,
+            onLightChange: handleLightChange
         });
 
         const initialSnapshot = environment.getSnapshot();
@@ -100,13 +114,15 @@ function removeFishSprites(count) {
 }
 
 function formatStatus(snapshot) {
-    const { oxygen, carbonDioxide, toxins, fishCount, averageHealth } = snapshot;
+    const { oxygen, carbonDioxide, toxins, fishCount, averageHealth, plants, algae } = snapshot;
     return [
         `O2 ${oxygen.toFixed(0)}`,
         `CO2 ${carbonDioxide.toFixed(0)}`,
         `Gift ${toxins.toFixed(1)}`,
         `Fische ${fishCount}`,
-        `Gesundheit ${averageHealth.toFixed(0)}`
+        `Gesundheit ${averageHealth.toFixed(0)}`,
+        `Pfl ${plants.toFixed(0)}`,
+        `Alg ${algae.toFixed(1)}`
     ].join(' | ');
 }
 
@@ -175,6 +191,18 @@ function handleRemoveFish() {
 
 function handleWaterChange() {
     const snapshot = environment.waterChange();
+    syncUi(snapshot);
+}
+
+function handleFeedChange(level) {
+    const target = FEED_LEVELS[level] ?? FEED_LEVELS.medium;
+    const snapshot = environment.setNutrientLevel(target);
+    syncUi(snapshot);
+}
+
+function handleLightChange(level) {
+    const target = LIGHT_LEVELS[level] ?? LIGHT_LEVELS.medium;
+    const snapshot = environment.setLightLevel(target);
     syncUi(snapshot);
 }
 

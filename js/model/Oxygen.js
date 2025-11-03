@@ -7,8 +7,9 @@ export class Oxygen extends Component {
     }
 
     update() {
-        if (this.value > LIMITS.maxValue) {
-            this.value = LIMITS.maxValue;
+        const cap = Math.min(DEFAULTS.oxygen.photosynthesisCap ?? LIMITS.maxValue, LIMITS.maxValue);
+        if (this.value > cap) {
+            this.value = cap;
         }
     }
 }
