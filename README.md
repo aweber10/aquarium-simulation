@@ -6,9 +6,11 @@ served directly by any static web server during active development.
 
 ## Current Progress
 
-- Static HTML layout with canvas aquarium and placeholder control panel.
+- Static HTML layout with canvas aquarium and a vanilla control panel showing live metrics.
 - Asset loader pulls legacy GIF sprites and draws the aquarium background.
 - Lightweight sprite engine animates a small school of neon fish with bounce physics.
+- Minimal ecosystem model updates oxygen, CO2, toxins and fish health once per second.
+- Erste Interaktionen: Fische hinzufuegen/entfernen sowie Wasserwechsel beeinflussen direkt das Modell.
 
 ## Development Setup
 
@@ -18,6 +20,6 @@ served directly by any static web server during active development.
 
 ## Next Steps
 
-- Flesh out the core simulation modules (`js/model/`) based on the migration plan.
-- Replace the placeholder control panel with the interactive UI widgets from the legacy applet.
+- Expand the ecosystem model with plants, algae and nutrient cycles (`js/model/`).
+- Introduce weitere interaktive Control-Widgets (Futter, Licht, Wasserqualitaet) und verbinde sie mit dem Modell.
 - Bring over sprite AI (schooling, collision, nutrition effects) and hook it into the canvas loop.

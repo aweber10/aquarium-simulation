@@ -62,16 +62,144 @@ body {
     width: 100%;
     max-width: 678px;
     min-height: 451px;
-    display: grid;
-    place-items: center;
-    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    border-radius: 12px;
     background: rgba(0, 0, 0, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     color: #9ed8ff;
+    font-size: 0.95rem;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+.control-panel__title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.control-panel__stats {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.control-panel__stat {
+    background: rgba(10, 34, 52, 0.65);
+    border: 1px solid rgba(158, 216, 255, 0.15);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.control-panel__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.control-panel__label {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #acdfff;
+}
+
+.control-panel__value {
+    font-variant-numeric: tabular-nums;
     font-size: 0.95rem;
 }
 
-.control-panel__placeholder {
-    text-align: center;
-    opacity: 0.75;
+.control-panel meter {
+    width: 100%;
+    height: 0.6rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.control-panel meter::-webkit-meter-bar {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 999px;
+}
+
+.control-panel meter::-webkit-meter-optimum-value {
+    background: linear-gradient(90deg, #27d9ff, #0a7bd4);
+    border-radius: 999px;
+}
+
+.control-panel meter::-webkit-meter-suboptimum-value {
+    background: linear-gradient(90deg, #ffb347, #ff7700);
+    border-radius: 999px;
+}
+
+.control-panel meter::-webkit-meter-even-less-good-value {
+    background: linear-gradient(90deg, #ff677d, #cf1b1b);
+    border-radius: 999px;
+}
+
+.control-panel__footer {
+    font-size: 0.85rem;
+    color: rgba(158, 216, 255, 0.7);
+}
+
+.control-panel__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.control-panel__button {
+    appearance: none;
+    border: none;
+    border-radius: 999px;
+    padding: 0.65rem 1.4rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    background: rgba(158, 216, 255, 0.15);
+    color: #f4faff;
+    cursor: pointer;
+    transition: transform 120ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.control-panel__button:hover:not(:disabled),
+.control-panel__button:focus-visible {
+    background: rgba(158, 216, 255, 0.3);
+    box-shadow: 0 0 0 3px rgba(158, 216, 255, 0.2);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+.control-panel__button:active {
+    transform: translateY(0);
+}
+
+.control-panel__button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.control-panel__button--primary {
+    background: linear-gradient(135deg, #1fa4ff, #0c6bd4);
+}
+
+.control-panel__button--primary:hover:not(:disabled),
+.control-panel__button--primary:focus-visible {
+    background: linear-gradient(135deg, #3bb6ff, #1d7deb);
+}
+
+.control-panel__button--accent {
+    background: linear-gradient(135deg, #18d6b3, #118f96);
+}
+
+.control-panel__button--accent:hover:not(:disabled),
+.control-panel__button--accent:focus-visible {
+    background: linear-gradient(135deg, #36f0cb, #1fa8b1);
 }
