@@ -1,0 +1,77 @@
+:root {
+    color-scheme: light dark;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background-color: #051621;
+    color: #f4faff;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-header {
+    padding: 1.5rem 2rem;
+    background: rgba(0, 0, 0, 0.45);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.app-header h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+}
+
+.status-message {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #9ed8ff;
+}
+
+.app-main {
+    flex: 1;
+    display: flex;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    box-sizing: border-box;
+}
+
+.aquarium-container,
+.control-panel-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(3, 25, 41, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 12px 32px rgba(2, 18, 33, 0.4);
+}
+
+#aquarium {
+    display: block;
+    width: 100%;
+    max-width: 800px;
+    border-radius: 8px;
+    background: #000;
+}
+
+.control-panel {
+    width: 100%;
+    max-width: 678px;
+    min-height: 451px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #9ed8ff;
+    font-size: 0.95rem;
+}
+
+.control-panel__placeholder {
+    text-align: center;
+    opacity: 0.75;
+}
