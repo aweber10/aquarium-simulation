@@ -2,7 +2,7 @@ import { Oxygen } from './Oxygen.js';
 import { CarbonDioxide } from './CarbonDioxide.js';
 import { Toxins } from './Toxins.js';
 import { NeonFish } from './NeonFish.js';
-import { MODEL_INTERVAL_SECONDS } from './constants.js';
+import { DEFAULTS, MODEL_INTERVAL_SECONDS } from './constants.js';
 import { Plants } from './Plants.js';
 import { Algae } from './Algae.js';
 import { Nutrients } from './Nutrients.js';
@@ -52,7 +52,8 @@ export class Environment {
     waterChange() {
         this.toxins.value *= 0.35;
         this.oxygen.value = Math.min(this.oxygen.value + 15, 100);
-        this.carbonDioxide.value = Math.max(this.carbonDioxide.value - 10, 0);
+        const carbonMinimum = DEFAULTS.carbonDioxide.minimum ?? 0;
+        this.carbonDioxide.value = Math.max(carbonMinimum, this.carbonDioxide.value - 10);
         this.deadPlants.value *= 0.5;
         this.deadFish.value *= 0.5;
         return this.getSnapshot();
@@ -123,7 +124,7 @@ export class Environment {
         this.plants.update();
         this.algae.update();
         this.oxygen.update();
-        this.carbonDioxide.clamp();
+        this.carbonDioxide.update();
         this.toxins.update();
         this.deadPlants.update();
         this.deadFish.update();

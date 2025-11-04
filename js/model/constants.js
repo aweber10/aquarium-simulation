@@ -9,8 +9,8 @@ export const DEFAULTS = {
     fish: {
         start: 50,
         robustness: 20,
-        oxygenConsumptionRate: 0.01,
-        wasteRate: 0.001
+        oxygenConsumptionRate: 0.0008,
+        wasteRate: 0.0006
     },
     oxygen: {
         start: 100,
@@ -18,12 +18,14 @@ export const DEFAULTS = {
     },
     carbonDioxide: {
         start: 20,
-        minimum: 0
+        minimum: 8,
+        regenerationRate: 0.05
     },
     toxins: {
         start: 2,
-        decayRate: 0.001,
-        highOxygenDecayRate: 0.002
+        decayRate: 0.0015,
+        highOxygenDecayRate: 0.004,
+        minimum: 0.5
     },
     toxinThresholds: {
         danger: 5,
@@ -31,19 +33,21 @@ export const DEFAULTS = {
     },
     oxygenThresholds: {
         low: 40,
+        medium: 60,
         high: 80
     },
     plants: {
         start: 500,
         max: 5000,
-        growthRate: 0.01,
-        deathRate: 0.001,
-        photosynthesisRate: 0.01
+        growthRate: 0.005,
+        deathRate: 0.0005,
+        photosynthesisRate: 0.0008
     },
     algae: {
         start: 1,
-        growthRate: 0.001,
-        photosynthesisRate: 0.001
+        growthRate: 0.0008,
+        photosynthesisRate: 0.0006,
+        max: 50
     },
     nutrients: {
         start: 100,
@@ -58,8 +62,8 @@ export const DEFAULTS = {
         high: 13
     },
     waste: {
-        plantDecayRate: 0.01,
-        fishDecayRate: 0.001,
-        plantToxicity: 0.01
+        plantDecayRate: 0.02,
+        fishDecayRate: 0.002,
+        plantToxicity: 0.008
     }
 };
