@@ -211,8 +211,8 @@ function createFishEntity(model, direction = null) {
         lastDirection: chosenDirection === 'left' ? -1 : 1,
         wanderTimer: randomBetween(0.6, 1.6),
         wanderVector: {
-            x: randomBetween(-0.4, 0.4),
-            y: randomBetween(-0.25, 0.25)
+            x: randomBetween(-0.3, 0.3),
+            y: randomBetween(-0.2, 0.2)
         }
     };
 
@@ -256,8 +256,8 @@ function computeEdgeAvoidance(center, vitality) {
         return { x: 0, y: 0 };
     }
 
-    const horizontalPadding = lerp(45, 140, vitality);
-    const verticalPadding = lerp(35, 105, vitality);
+    const horizontalPadding = lerp(50, 115, vitality);
+    const verticalPadding = lerp(40, 90, vitality);
 
     const steer = { x: 0, y: 0 };
 
@@ -286,14 +286,15 @@ function updateFishBehavior(delta) {
         return;
     }
 
-    const neighborRadius = 130;
-    const separationRadius = 55;
-    const lowHealthSpeed = 12;
+    const neighborRadius = 120;
+    const separationRadius = 52;
+    const lowHealthSpeed = 10;
 
     for (const entity of fishEntities) {
         const { sprite, model, baseSpeed } = entity;
         const health = Math.max(0, Math.min(model.value ?? 0, 100));
-        const vitality = health <= 50 ? 0 : (health - 50) / 50;
+        const vitalityRange = Math.max(0, Math.min(1, (health - 60) / 40)); // swarm behaviour ramps up from 60% health
+        const vitality = vitalityRange * vitalityRange;
         const currentDirection = Math.sign(sprite.velocity.x) || entity.lastDirection || 1;
 
         if (vitality <= 0) {
@@ -359,7 +360,7 @@ function updateFishBehavior(delta) {
               })
             : { x: 0, y: 0 };
 
-        const separationMagnitude = Math.min(1.7, vectorLength(separationSum));
+        const separationMagnitude = Math.min(1.3, vectorLength(separationSum));
         const separation =
             neighborCount > 0 && separationMagnitude > 0
                 ? scaleVector(normalizeVector(separationSum), separationMagnitude)
@@ -367,23 +368,23 @@ function updateFishBehavior(delta) {
 
         entity.wanderTimer -= delta;
         if (entity.wanderTimer <= 0) {
-            const magnitude = lerp(0.2, 0.85, vitality);
+            const magnitude = lerp(0.15, 0.65, vitality);
             const angle = randomBetween(0, Math.PI * 2);
             entity.wanderVector = {
                 x: Math.cos(angle) * magnitude,
-                y: Math.sin(angle) * magnitude * 0.6
+                y: Math.sin(angle) * magnitude * 0.55
             };
-            entity.wanderTimer = randomBetween(0.7, 1.8);
+            entity.wanderTimer = randomBetween(0.8, 2.1);
         }
 
         const wander = entity.wanderVector ?? { x: 0, y: 0 };
         const avoidance = computeEdgeAvoidance(center, vitality);
 
-        const alignmentWeight = lerp(0.15, 0.85, vitality);
-        const cohesionWeight = lerp(0.03, 0.55, vitality);
-        const separationWeight = lerp(1.6, 1.05, vitality);
-        const avoidanceWeight = lerp(0.5, 1.1, vitality);
-        const wanderWeight = lerp(0.12, 0.35, vitality);
+        const alignmentWeight = lerp(0.08, 0.6, vitality);
+        const cohesionWeight = lerp(0.02, 0.4, vitality);
+        const separationWeight = lerp(1.4, 1.05, vitality);
+        const avoidanceWeight = lerp(0.45, 0.95, vitality);
+        const wanderWeight = lerp(0.16, 0.3, vitality);
 
         let desired = { x: 0, y: 0 };
         desired = addVectors(desired, scaleVector(alignment, alignmentWeight));
@@ -398,11 +399,11 @@ function updateFishBehavior(delta) {
             desired = normalizeVector(desired);
         }
 
-        const targetSpeed = lerp(baseSpeed * 0.95, baseSpeed * 1.8, vitality);
-        const minSpeed = baseSpeed * 0.55;
+        const targetSpeed = lerp(baseSpeed * 1.0, baseSpeed * 1.55, vitality);
+        const minSpeed = baseSpeed * 0.65;
         const targetVelocity = scaleVector(desired, targetSpeed);
 
-        const blendFactor = Math.min(1, 0.14 + vitality * 0.32);
+        const blendFactor = Math.min(1, 0.12 + vitality * 0.25);
         const smoothedVelocity = {
             x: lerp(sprite.velocity.x, targetVelocity.x, blendFactor),
             y: lerp(sprite.velocity.y, targetVelocity.y, blendFactor)
@@ -411,7 +412,7 @@ function updateFishBehavior(delta) {
         let limitedVelocity = vectorLength(smoothedVelocity) === 0
             ? scaleVector(desired, minSpeed)
             : clampVectorMagnitude(smoothedVelocity, minSpeed, targetSpeed);
-        const maxVertical = 35 + vitality * 28;
+        const maxVertical = 28 + vitality * 22;
         limitedVelocity.y = Math.max(-maxVertical, Math.min(maxVertical, limitedVelocity.y));
 
         if (
