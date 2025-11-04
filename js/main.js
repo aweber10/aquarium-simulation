@@ -108,6 +108,53 @@ function lerp(from, to, t) {
     return from + (to - from) * clamped;
 }
 
+function vectorLength(vector) {
+    return Math.hypot(vector.x, vector.y);
+}
+
+function normalizeVector(vector) {
+    const length = vectorLength(vector);
+    if (length === 0) {
+        return { x: 0, y: 0 };
+    }
+    return { x: vector.x / length, y: vector.y / length };
+}
+
+function scaleVector(vector, factor) {
+    return {
+        x: vector.x * factor,
+        y: vector.y * factor
+    };
+}
+
+function addVectors(a, b) {
+    return {
+        x: a.x + b.x,
+        y: a.y + b.y
+    };
+}
+
+function clampVectorMagnitude(vector, minLength, maxLength) {
+    const length = vectorLength(vector);
+    if (length === 0) {
+        return { x: 0, y: 0 };
+    }
+
+    let targetLength = length;
+    if (minLength != null && length < minLength) {
+        targetLength = minLength;
+    } else if (maxLength != null && length > maxLength) {
+        targetLength = maxLength;
+    }
+
+    if (targetLength === length) {
+        return { x: vector.x, y: vector.y };
+    }
+
+    const scale = targetLength / length;
+    return scaleVector(vector, scale);
+}
+
 function formatStatus(snapshot) {
     const { oxygen, carbonDioxide, toxins, fishCount, averageHealth, plants, algae } = snapshot;
     return [
@@ -161,8 +208,12 @@ function createFishEntity(model, direction = null) {
         model,
         sprite,
         baseSpeed,
-        turnCooldown: randomBetween(1.5, 3.5),
-        lastDirection: chosenDirection === 'left' ? -1 : 1
+        lastDirection: chosenDirection === 'left' ? -1 : 1,
+        wanderTimer: randomBetween(0.6, 1.6),
+        wanderVector: {
+            x: randomBetween(-0.4, 0.4),
+            y: randomBetween(-0.25, 0.25)
+        }
     };
 
     fishEntities.push(entity);
@@ -193,36 +244,37 @@ function syncFishEntities() {
     }
 }
 
-function edgeDistances(sprite) {
-    const { x, y, width, height } = sprite.position;
+function spriteCenter(sprite) {
     return {
-        left: x - worldBounds.x,
-        right: worldBounds.x + worldBounds.width - (x + width),
-        top: y - worldBounds.y,
-        bottom: worldBounds.y + worldBounds.height - (y + height)
+        x: sprite.position.x + sprite.position.width / 2,
+        y: sprite.position.y + sprite.position.height / 2
     };
 }
 
-function computeEdgeAvoidance(edges, vitality) {
+function computeEdgeAvoidance(center, vitality) {
     if (vitality <= 0) {
         return { x: 0, y: 0 };
     }
 
-    const marginX = 90;
-    const marginY = 70;
+    const horizontalPadding = lerp(45, 140, vitality);
+    const verticalPadding = lerp(35, 105, vitality);
+
     const steer = { x: 0, y: 0 };
 
-    if (edges.left < marginX) {
-        steer.x += ((marginX - edges.left) / marginX) * 60 * vitality;
+    const leftThreshold = worldBounds.x + horizontalPadding;
+    const rightThreshold = worldBounds.x + worldBounds.width - horizontalPadding;
+    if (center.x < leftThreshold) {
+        steer.x += (leftThreshold - center.x) / horizontalPadding;
+    } else if (center.x > rightThreshold) {
+        steer.x -= (center.x - rightThreshold) / horizontalPadding;
     }
-    if (edges.right < marginX) {
-        steer.x -= ((marginX - edges.right) / marginX) * 60 * vitality;
-    }
-    if (edges.top < marginY) {
-        steer.y += ((marginY - edges.top) / marginY) * 45 * vitality;
-    }
-    if (edges.bottom < marginY) {
-        steer.y -= ((marginY - edges.bottom) / marginY) * 45 * vitality;
+
+    const topThreshold = worldBounds.y + verticalPadding;
+    const bottomThreshold = worldBounds.y + worldBounds.height - verticalPadding;
+    if (center.y < topThreshold) {
+        steer.y += (topThreshold - center.y) / verticalPadding;
+    } else if (center.y > bottomThreshold) {
+        steer.y -= (center.y - bottomThreshold) / verticalPadding;
     }
 
     return steer;
@@ -234,8 +286,8 @@ function updateFishBehavior(delta) {
         return;
     }
 
-    const neighborRadius = 140;
-    const separationRadius = 45;
+    const neighborRadius = 130;
+    const separationRadius = 55;
     const lowHealthSpeed = 12;
 
     for (const entity of fishEntities) {
@@ -254,13 +306,13 @@ function updateFishBehavior(delta) {
                 sprite.setVelocity(newVelocity);
             }
             entity.lastDirection = Math.sign(newVelocity.x) || entity.lastDirection || 1;
-            entity.turnCooldown = Math.max(entity.turnCooldown ?? 0, 0);
             continue;
         }
 
-        let alignment = { x: 0, y: 0 };
-        let cohesion = { x: 0, y: 0 };
-        let separation = { x: 0, y: 0 };
+        const center = spriteCenter(sprite);
+        let alignmentSum = { x: 0, y: 0 };
+        let cohesionSum = { x: 0, y: 0 };
+        let separationSum = { x: 0, y: 0 };
         let neighborCount = 0;
 
         for (const other of fishEntities) {
@@ -268,103 +320,106 @@ function updateFishBehavior(delta) {
                 continue;
             }
 
-            const dx = other.sprite.position.x - sprite.position.x;
-            const dy = other.sprite.position.y - sprite.position.y;
-            const distance = Math.hypot(dx, dy);
+            const otherCenter = spriteCenter(other.sprite);
+            const offset = {
+                x: otherCenter.x - center.x,
+                y: otherCenter.y - center.y
+            };
+            const distance = vectorLength(offset);
 
             if (distance === 0 || distance > neighborRadius) {
                 continue;
             }
 
             neighborCount += 1;
-            alignment.x += other.sprite.velocity.x;
-            alignment.y += other.sprite.velocity.y;
-            cohesion.x += other.sprite.position.x;
-            cohesion.y += other.sprite.position.y;
+            alignmentSum = addVectors(alignmentSum, other.sprite.velocity);
+            cohesionSum = addVectors(cohesionSum, otherCenter);
 
             if (distance < separationRadius) {
-                const factor = (separationRadius - distance) / separationRadius;
-                separation.x -= (dx / distance) * factor;
-                separation.y -= (dy / distance) * factor;
+                const factor = 1 - distance / separationRadius;
+                const push = scaleVector(normalizeVector(offset), factor);
+                separationSum = addVectors(separationSum, {
+                    x: -push.x,
+                    y: -push.y
+                });
             }
         }
 
-        if (neighborCount > 0) {
-            alignment.x = alignment.x / neighborCount - sprite.velocity.x;
-            alignment.y = alignment.y / neighborCount - sprite.velocity.y;
-            cohesion.x = cohesion.x / neighborCount - sprite.position.x;
-            cohesion.y = cohesion.y / neighborCount - sprite.position.y;
+        const alignment = neighborCount > 0
+            ? normalizeVector({
+                  x: alignmentSum.x / neighborCount,
+                  y: alignmentSum.y / neighborCount
+              })
+            : { x: 0, y: 0 };
+
+        const cohesion = neighborCount > 0
+            ? normalizeVector({
+                  x: cohesionSum.x / neighborCount - center.x,
+                  y: cohesionSum.y / neighborCount - center.y
+              })
+            : { x: 0, y: 0 };
+
+        const separationMagnitude = Math.min(1.7, vectorLength(separationSum));
+        const separation =
+            neighborCount > 0 && separationMagnitude > 0
+                ? scaleVector(normalizeVector(separationSum), separationMagnitude)
+                : { x: 0, y: 0 };
+
+        entity.wanderTimer -= delta;
+        if (entity.wanderTimer <= 0) {
+            const magnitude = lerp(0.2, 0.85, vitality);
+            const angle = randomBetween(0, Math.PI * 2);
+            entity.wanderVector = {
+                x: Math.cos(angle) * magnitude,
+                y: Math.sin(angle) * magnitude * 0.6
+            };
+            entity.wanderTimer = randomBetween(0.7, 1.8);
         }
 
-        const edges = edgeDistances(sprite);
-        const avoidance = computeEdgeAvoidance(edges, vitality);
-        const wanderStrength = lerp(2, 24, vitality);
-        const wander = {
-            x: (Math.random() - 0.5) * wanderStrength,
-            y: (Math.random() - 0.5) * wanderStrength * 0.6
+        const wander = entity.wanderVector ?? { x: 0, y: 0 };
+        const avoidance = computeEdgeAvoidance(center, vitality);
+
+        const alignmentWeight = lerp(0.15, 0.85, vitality);
+        const cohesionWeight = lerp(0.03, 0.55, vitality);
+        const separationWeight = lerp(1.6, 1.05, vitality);
+        const avoidanceWeight = lerp(0.5, 1.1, vitality);
+        const wanderWeight = lerp(0.12, 0.35, vitality);
+
+        let desired = { x: 0, y: 0 };
+        desired = addVectors(desired, scaleVector(alignment, alignmentWeight));
+        desired = addVectors(desired, scaleVector(cohesion, cohesionWeight));
+        desired = addVectors(desired, scaleVector(separation, separationWeight));
+        desired = addVectors(desired, scaleVector(avoidance, avoidanceWeight));
+        desired = addVectors(desired, scaleVector(wander, wanderWeight));
+
+        if (vectorLength(desired) === 0) {
+            desired = normalizeVector({ x: currentDirection, y: 0 });
+        } else {
+            desired = normalizeVector(desired);
+        }
+
+        const targetSpeed = lerp(baseSpeed * 0.95, baseSpeed * 1.8, vitality);
+        const minSpeed = baseSpeed * 0.55;
+        const targetVelocity = scaleVector(desired, targetSpeed);
+
+        const blendFactor = Math.min(1, 0.14 + vitality * 0.32);
+        const smoothedVelocity = {
+            x: lerp(sprite.velocity.x, targetVelocity.x, blendFactor),
+            y: lerp(sprite.velocity.y, targetVelocity.y, blendFactor)
         };
 
-        let newVelocity = {
-            x:
-                sprite.velocity.x +
-                alignment.x * (0.5 * vitality) +
-                cohesion.x * (0.35 * vitality) +
-                separation.x * 1.2 +
-                avoidance.x +
-                wander.x * 0.2,
-            y:
-                sprite.velocity.y +
-                alignment.y * (0.5 * vitality) +
-                cohesion.y * (0.35 * vitality) +
-                separation.y * 1.2 +
-                avoidance.y +
-                wander.y * 0.3
-        };
-
-        entity.turnCooldown = (entity.turnCooldown ?? randomBetween(1.5, 3.5)) - delta;
-        const nearHorizontalEdge = Math.min(edges.left, edges.right) < 65;
-        const nearVerticalEdge = Math.min(edges.top, edges.bottom) < 50;
+        let limitedVelocity = vectorLength(smoothedVelocity) === 0
+            ? scaleVector(desired, minSpeed)
+            : clampVectorMagnitude(smoothedVelocity, minSpeed, targetSpeed);
+        const maxVertical = 35 + vitality * 28;
+        limitedVelocity.y = Math.max(-maxVertical, Math.min(maxVertical, limitedVelocity.y));
 
         if (
-            entity.turnCooldown <= 0 &&
-            (nearHorizontalEdge || Math.random() < (0.2 + vitality * 0.4) * delta)
+            Math.abs(sprite.velocity.x - limitedVelocity.x) > 0.02 ||
+            Math.abs(sprite.velocity.y - limitedVelocity.y) > 0.02
         ) {
-            const turnDirection = nearHorizontalEdge
-                ? edges.left < edges.right
-                    ? 1
-                    : -1
-                : -Math.sign(sprite.velocity.x || entity.lastDirection || 1);
-
-            newVelocity.x = turnDirection * lerp(baseSpeed, baseSpeed * 1.6, vitality);
-            newVelocity.y += (Math.random() - 0.5) * baseSpeed * 0.6;
-            entity.turnCooldown = randomBetween(1.2, 3.5) / (0.4 + vitality);
-        } else if (nearVerticalEdge) {
-            newVelocity.y *= -1;
-        }
-
-        const desiredSpeed = lerp(baseSpeed, baseSpeed * 1.8, vitality);
-        const minSpeed = baseSpeed * 0.6;
-        const currentSpeed = Math.hypot(newVelocity.x, newVelocity.y) || 0.0001;
-
-        if (currentSpeed > desiredSpeed) {
-            const scale = desiredSpeed / currentSpeed;
-            newVelocity.x *= scale;
-            newVelocity.y *= scale;
-        } else if (currentSpeed < minSpeed) {
-            const scale = minSpeed / currentSpeed;
-            newVelocity.x *= scale;
-            newVelocity.y *= scale;
-        }
-
-        const maxVertical = 35 + vitality * 25;
-        newVelocity.y = Math.max(-maxVertical, Math.min(maxVertical, newVelocity.y));
-
-        if (
-            Math.abs(sprite.velocity.x - newVelocity.x) > 0.05 ||
-            Math.abs(sprite.velocity.y - newVelocity.y) > 0.05
-        ) {
-            sprite.setVelocity(newVelocity);
-            entity.lastDirection = Math.sign(newVelocity.x) || entity.lastDirection || 1;
+            sprite.setVelocity(limitedVelocity);
+            entity.lastDirection = Math.sign(limitedVelocity.x) || entity.lastDirection || 1;
         }
     }
 }
