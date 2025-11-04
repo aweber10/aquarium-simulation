@@ -213,7 +213,8 @@ function createFishEntity(model, direction = null) {
         wanderVector: {
             x: randomBetween(-0.3, 0.3),
             y: randomBetween(-0.2, 0.2)
-        }
+        },
+        directionCooldown: 0
     };
 
     fishEntities.push(entity);
@@ -292,10 +293,16 @@ function updateFishBehavior(delta) {
 
     for (const entity of fishEntities) {
         const { sprite, model, baseSpeed } = entity;
+        const spriteDirection = Math.sign(sprite.velocity.x);
+        if (spriteDirection !== 0 && spriteDirection !== (entity.lastDirection ?? 0)) {
+            entity.lastDirection = spriteDirection;
+            entity.directionCooldown = 0;
+        }
         const health = Math.max(0, Math.min(model.value ?? 0, 100));
         const vitalityRange = Math.max(0, Math.min(1, (health - 60) / 40)); // swarm behaviour ramps up from 60% health
         const vitality = vitalityRange * vitalityRange;
-        const currentDirection = Math.sign(sprite.velocity.x) || entity.lastDirection || 1;
+        const currentDirection = spriteDirection || entity.lastDirection || 1;
+        entity.directionCooldown = Math.max(0, (entity.directionCooldown ?? 0) - delta);
 
         if (vitality <= 0) {
             const calmSpeed = Math.max(lowHealthSpeed, baseSpeed * 0.75);
@@ -307,6 +314,7 @@ function updateFishBehavior(delta) {
                 sprite.setVelocity(newVelocity);
             }
             entity.lastDirection = Math.sign(newVelocity.x) || entity.lastDirection || 1;
+            entity.directionCooldown = 0;
             continue;
         }
 
@@ -414,6 +422,25 @@ function updateFishBehavior(delta) {
             : clampVectorMagnitude(smoothedVelocity, minSpeed, targetSpeed);
         const maxVertical = 28 + vitality * 22;
         limitedVelocity.y = Math.max(-maxVertical, Math.min(maxVertical, limitedVelocity.y));
+
+        const previousDirection = entity.lastDirection || currentDirection || 1;
+        let desiredDirection = Math.sign(limitedVelocity.x);
+        if (desiredDirection === 0) {
+            desiredDirection = previousDirection;
+        }
+
+        if (desiredDirection !== previousDirection) {
+            if ((entity.directionCooldown ?? 0) > 0) {
+                limitedVelocity.x = Math.abs(limitedVelocity.x) * previousDirection;
+                desiredDirection = previousDirection;
+            } else {
+                const turnDelay = lerp(0.55, 0.25, vitality);
+                entity.directionCooldown = turnDelay;
+            }
+        }
+        limitedVelocity.x = Math.sign(desiredDirection) === -1
+            ? -Math.abs(limitedVelocity.x)
+            : Math.abs(limitedVelocity.x);
 
         if (
             Math.abs(sprite.velocity.x - limitedVelocity.x) > 0.02 ||
